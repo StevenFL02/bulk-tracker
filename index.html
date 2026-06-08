@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bulk Tracker</title>
+
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#38bdf8">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Bulk Tracker">
+    <link rel="apple-touch-icon" href="./icon-192.svg">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+            padding: 1rem;
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.75rem;
+            margin-bottom: 0.25rem;
+            color: #38bdf8;
+        }
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .tabs {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .tab-btn {
+            padding: 0.5rem 1.25rem;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #94a3b8;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+        .tab-btn:hover { border-color: #38bdf8; color: #e2e8f0; }
+        .tab-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; font-weight: 600; }
+        .tab-content { display: none; max-width: 700px; margin: 0 auto; }
+        .tab-content.active { display: block; }
+
+        /* Form */
+        .form-card {
+            background: #1e293b;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            border: 1px solid #334155;
+        }
+        .form-section-title {
+            font-size: 1rem;
+            color: #38bdf8;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.25rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full-width { grid-column: 1 / -1; }
+        .form-group label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 0.25rem;
+        }
+        .form-group input {
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.4rem;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #38bdf8;
+        }
+        .btn-primary {
+            width: 100%;
+            padding: 0.75rem;
+            background: #38bdf8;
+            color: #0f172a;
+            border: none;
+            border-radius: 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 0.5rem;
+            transition: background 0.2s;
+        }
+        .btn-primary:hover { background: #7dd3fc; }
+        .btn-danger {
+            padding: 0.35rem 0.75rem;
+            background: #dc2626;
+            color: #fff;
+            border: none;
+            border-radius: 0.35rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+        .btn-danger:hover { background: #ef4444; }
+
+        /* History */
+        .history-list { display: flex; flex-direction: column; gap: 0.75rem; }
+        .history-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1rem 1.25rem;
+        }
+        .history-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+        .history-date { font-weight: 600; color: #38bdf8; }
+        .history-weight { font-size: 1.1rem; font-weight: 700; }
+        .history-measurements {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.25rem 1rem;
+            font-size: 0.82rem;
+            color: #94a3b8;
+        }
+        .history-measurements strong { color: #e2e8f0; }
+
+        /* Charts */
+        .chart-container {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .chart-container canvas { max-height: 300px; }
+        .chart-select {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 1rem;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .chart-select button {
+            padding: 0.35rem 0.75rem;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #94a3b8;
+            border-radius: 0.35rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .chart-select button.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+        .chart-select button:hover { border-color: #38bdf8; }
+
+        .empty-state {
+            text-align: center;
+            color: #64748b;
+            padding: 3rem 1rem;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            background: #065f46;
+            color: #a7f3d0;
+            padding: 0.75rem 1.25rem;
+            border-radius: 0.5rem;
+            font-size: 0.9rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show { opacity: 1; }
+
+        @media (max-width: 500px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .history-measurements { grid-template-columns: 1fr 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <h1>💪 Bulk Tracker</h1>
+    <p class="subtitle">Weekly body measurements for your muscle-building journey</p>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="input">Log Entry</button>
+        <button class="tab-btn" data-tab="history">History</button>
+        <button class="tab-btn" data-tab="charts">Charts</button>
+    </div>
+
+    <div id="tab-input" class="tab-content active">
+        <div class="form-card">
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="entry-date">Week Date</label>
+                    <input type="date" id="entry-date">
+                </div>
+            </div>
+
+            <p class="form-section-title">Weight</p>
+            <div class="form-grid">
+                <div class="form-group full-width">
+                    <label for="weight">Body Weight (lbs)</label>
+                    <input type="number" id="weight" step="0.1" placeholder="185.5">
+                </div>
+            </div>
+
+            <p class="form-section-title">Upper Body</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="neck">Neck (in)</label>
+                    <input type="number" id="neck" step="0.1" placeholder="15.5">
+                </div>
+                <div class="form-group">
+                    <label for="shoulders">Shoulders (in)</label>
+                    <input type="number" id="shoulders" step="0.1" placeholder="48.0">
+                </div>
+                <div class="form-group">
+                    <label for="chest">Chest (in)</label>
+                    <input type="number" id="chest" step="0.1" placeholder="42.0">
+                </div>
+                <div class="form-group">
+                    <label for="waist">Waist (in)</label>
+                    <input type="number" id="waist" step="0.1" placeholder="33.0">
+                </div>
+            </div>
+
+            <p class="form-section-title">Arms</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="bicep-left">Left Bicep (in)</label>
+                    <input type="number" id="bicep-left" step="0.1" placeholder="14.5">
+                </div>
+                <div class="form-group">
+                    <label for="bicep-right">Right Bicep (in)</label>
+                    <input type="number" id="bicep-right" step="0.1" placeholder="14.5">
+                </div>
+            </div>
+
+            <p class="form-section-title">Lower Body</p>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="hips">Hips (in)</label>
+                    <input type="number" id="hips" step="0.1" placeholder="38.0">
+                </div>
+                <div class="form-group">
+                    <label for="thigh-left">Left Thigh (in)</label>
+                    <input type="number" id="thigh-left" step="0.1" placeholder="23.0">
+                </div>
+                <div class="form-group">
+                    <label for="thigh-right">Right Thigh (in)</label>
+                    <input type="number" id="thigh-right" step="0.1" placeholder="23.0">
+                </div>
+                <div class="form-group">
+                    <label for="calf-left">Left Calf (in)</label>
+                    <input type="number" id="calf-left" step="0.1" placeholder="15.0">
+                </div>
+                <div class="form-group">
+                    <label for="calf-right">Right Calf (in)</label>
+                    <input type="number" id="calf-right" step="0.1" placeholder="15.0">
+                </div>
+            </div>
+
+            <button class="btn-primary" id="save-btn">Save Week Entry</button>
+        </div>
+    </div>
+
+    <div id="tab-history" class="tab-content">
+        <div id="history-container"></div>
+    </div>
+
+    <div id="tab-charts" class="tab-content">
+        <div class="chart-select" id="chart-select"></div>
+        <div class="chart-container">
+            <canvas id="progress-chart"></canvas>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+    (function() {
+        // ===== IndexedDB Setup =====
+        const DB_NAME = 'BulkTrackerDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'entries';
+
+        function openDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DB_NAME, DB_VERSION);
+                req.onupgradeneeded = (e) => {
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'date' });
+                    }
+                };
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function getAllEntries() {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result.sort((a, b) => a.date.localeCompare(b.date)));
+                req.onerror = () => reject(req.error);
+            });
+        }
+
+        async function saveEntry(entry) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.put(entry);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        async function deleteEntry(date) {
+            const db = await openDB();
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                store.delete(date);
+                tx.oncomplete = () => resolve();
+                tx.onerror = () => reject(tx.error);
+            });
+        }
+
+        // ===== Measurements config =====
+        const MEASUREMENTS = [
+            { id: 'weight', label: 'Weight', unit: 'lbs', color: '#38bdf8' },
+            { id: 'neck', label: 'Neck', unit: 'in', color: '#a78bfa' },
+            { id: 'shoulders', label: 'Shoulders', unit: 'in', color: '#fb923c' },
+            { id: 'chest', label: 'Chest', unit: 'in', color: '#f87171' },
+            { id: 'waist', label: 'Waist', unit: 'in', color: '#fbbf24' },
+            { id: 'bicep-left', label: 'L Bicep', unit: 'in', color: '#34d399' },
+            { id: 'bicep-right', label: 'R Bicep', unit: 'in', color: '#2dd4bf' },
+            { id: 'hips', label: 'Hips', unit: 'in', color: '#e879f9' },
+            { id: 'thigh-left', label: 'L Thigh', unit: 'in', color: '#60a5fa' },
+            { id: 'thigh-right', label: 'R Thigh', unit: 'in', color: '#818cf8' },
+            { id: 'calf-left', label: 'L Calf', unit: 'in', color: '#4ade80' },
+            { id: 'calf-right', label: 'R Calf', unit: 'in', color: '#a3e635' },
+        ];
+
+        // ===== Tabs =====
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+                if (btn.dataset.tab === 'history') renderHistory();
+                if (btn.dataset.tab === 'charts') renderChart();
+            });
+        });
+
+        // ===== Toast =====
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 2500);
+        }
+
+        // ===== Set default date =====
+        document.getElementById('entry-date').valueAsDate = new Date();
+
+        // ===== Save =====
+        document.getElementById('save-btn').addEventListener('click', async () => {
+            const date = document.getElementById('entry-date').value;
+            if (!date) { showToast('Please select a date'); return; }
+
+            const entry = { date };
+            let hasValue = false;
+            MEASUREMENTS.forEach(m => {
+                const val = parseFloat(document.getElementById(m.id).value);
+                if (!isNaN(val)) { entry[m.id] = val; hasValue = true; }
+            });
+
+            if (!hasValue) { showToast('Enter at least one measurement'); return; }
+
+            await saveEntry(entry);
+            showToast('Week saved ✓');
+
+            // Clear form
+            MEASUREMENTS.forEach(m => document.getElementById(m.id).value = '');
+        });
+
+        // ===== History =====
+        async function renderHistory() {
+            const container = document.getElementById('history-container');
+            const entries = await getAllEntries();
+
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>No entries yet. Log your first week!</p></div>';
+                return;
+            }
+
+            container.innerHTML = entries.slice().reverse().map(e => {
+                const measurements = MEASUREMENTS
+                    .filter(m => e[m.id] !== undefined)
+                    .map(m => `<span>${m.label}: <strong>${e[m.id]} ${m.unit}</strong></span>`)
+                    .join('');
+                return `
+                    <div class="history-card">
+                        <div class="history-card-header">
+                            <span class="history-date">${formatDate(e.date)}</span>
+                            <button class="btn-danger" onclick="deleteEntryUI('${e.date}')">Delete</button>
+                        </div>
+                        <div class="history-measurements">${measurements}</div>
+                    </div>`;
+            }).join('');
+        }
+
+        window.deleteEntryUI = async function(date) {
+            if (confirm('Delete this entry?')) {
+                await deleteEntry(date);
+                renderHistory();
+                showToast('Entry deleted');
+            }
+        };
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr + 'T00:00:00');
+            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+        }
+
+        // ===== Charts =====
+        let chartInstance = null;
+        let activeMetric = 'weight';
+
+        function buildChartSelect() {
+            const container = document.getElementById('chart-select');
+            container.innerHTML = MEASUREMENTS.map(m =>
+                `<button data-metric="${m.id}" class="${m.id === activeMetric ? 'active' : ''}">${m.label}</button>`
+            ).join('');
+
+            container.querySelectorAll('button').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    activeMetric = btn.dataset.metric;
+                    container.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    renderChart();
+                });
+            });
+        }
+
+        async function renderChart() {
+            const entries = await getAllEntries();
+            const metric = MEASUREMENTS.find(m => m.id === activeMetric);
+
+            const data = entries.filter(e => e[activeMetric] !== undefined);
+            const labels = data.map(e => formatDate(e.date));
+            const values = data.map(e => e[activeMetric]);
+
+            if (chartInstance) chartInstance.destroy();
+
+            const ctx = document.getElementById('progress-chart').getContext('2d');
+            chartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: `${metric.label} (${metric.unit})`,
+                        data: values,
+                        borderColor: metric.color,
+                        backgroundColor: metric.color + '22',
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { labels: { color: '#e2e8f0' } }
+                    },
+                    scales: {
+                        x: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } },
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
+        }
+
+        buildChartSelect();
+    })();
+
+    // ===== Register Service Worker =====
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('./sw.js')
+            .then(() => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed:', err));
+    }
+    </script>
+</body>
+</html>
