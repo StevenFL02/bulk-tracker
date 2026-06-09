@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Bulk Tracker</title>
 
     <!-- PWA Meta Tags -->
@@ -333,10 +333,77 @@
             border-radius: 0.5rem;
         }
 
-        @media (max-width: 500px) {
-            .form-grid { grid-template-columns: 1fr; }
-            .history-measurements { grid-template-columns: 1fr; }
-            .dashboard-grid { grid-template-columns: 1fr 1fr; }
+        /* iPhone Air optimization (393pt viewport width) */
+        @media (max-width: 430px) {
+            body {
+                padding: 0.75rem;
+                padding-top: env(safe-area-inset-top, 0.75rem);
+                padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+            }
+            h1 { font-size: 1.5rem; }
+            .subtitle { font-size: 0.8rem; margin-bottom: 1rem; }
+            .tabs {
+                gap: 0.35rem;
+                margin-bottom: 1rem;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                justify-content: flex-start;
+                padding-bottom: 0.25rem;
+                -webkit-overflow-scrolling: touch;
+            }
+            .tab-btn {
+                padding: 0.45rem 0.75rem;
+                font-size: 0.78rem;
+                white-space: nowrap;
+                flex-shrink: 0;
+            }
+            .tab-content { max-width: 100%; }
+            .form-card { padding: 1rem; }
+            .form-grid { grid-template-columns: 1fr; gap: 0.6rem; margin-bottom: 1rem; }
+            .form-section-title { font-size: 0.9rem; margin-bottom: 0.75rem; }
+            .form-group input[type="number"],
+            .form-group input[type="date"] {
+                padding: 0.6rem 0.75rem;
+                font-size: 16px; /* prevents iOS zoom on focus */
+            }
+            .btn-primary { padding: 0.85rem; font-size: 1rem; }
+            .dashboard-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.6rem;
+            }
+            .dash-card { padding: 0.75rem; }
+            .dash-card .value { font-size: 1.3rem; }
+            .dash-card .label { font-size: 0.7rem; }
+            .history-card { padding: 0.85rem; }
+            .history-measurements {
+                grid-template-columns: 1fr;
+                gap: 0.3rem;
+            }
+            .chart-select {
+                gap: 0.35rem;
+                justify-content: flex-start;
+                overflow-x: auto;
+                flex-wrap: nowrap;
+                -webkit-overflow-scrolling: touch;
+            }
+            .chart-select button {
+                flex-shrink: 0;
+                white-space: nowrap;
+            }
+            .chart-container { padding: 0.75rem; }
+            .photo-gallery {
+                grid-template-columns: 1fr 1fr;
+                gap: 0.5rem;
+            }
+            .goal-item { padding: 0.85rem; }
+        }
+
+        /* Safe area for notch/dynamic island */
+        @supports (padding: env(safe-area-inset-top)) {
+            body {
+                padding-left: env(safe-area-inset-left);
+                padding-right: env(safe-area-inset-right);
+            }
         }
     </style>
 </head>
